@@ -20,9 +20,19 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) =>{
   try{
-      const newUser = await userDao.register(req.body);
-      if(newUser) res.redirect("/views/login")
-        else res.status(401).json({ msg: "Usuario ya existe" });
+    const {email} = req.body; 
+    if(email === 'adminCoder@coder.com' && password === 'adminCod3r123'){
+      const user = await userDao.register({
+        ...req.body,
+        role:'admin'
+      })
+      if (!user) res.status(401).json({ msg: "Usuario ya existe" }); 
+      else res.redirect('/views/login')
+    } else{
+      const user = await userDao.register(req.body);
+      if (!user) res.status(401).json({ msg: "Usuario ya existe" }); 
+      res.redirect('/views/login')
+    }
   }catch (error) {
     throw new Error(error);
   }
@@ -45,5 +55,5 @@ export const infoSession = (req, res) => {
 
 export const logout = (req, res) => {
   req.session.destroy();
-  res.send("Session destroyed");
+  res.redirect("/views/login");
 };
