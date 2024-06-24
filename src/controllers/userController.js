@@ -1,59 +1,54 @@
-import UserDao from '../daos/userDao.js';
-import {UserModel} from '../daos/models/userModel.js';
+import * as services from "../services/userServices.js";
 
-const userDao = new UserDao(UserModel); 
-
-export const login = async (req, res) => {
+export const registerResponse = (req, res, next) => {
   try {
-    const { email, password } = req.body;
-    const user = await userDao.login(email, password);
-    if (!user) res.status(401).json({ msg: "No estas autorizado" });
-    else {
-      req.session.email = email;
-      req.session.password = password;
-      res.redirect('/views/profile')
-    }
+    res.json({
+      msg: "Register OK",
+      session: req.session,
+    });
   } catch (error) {
-    throw new Error(error);
+    next(error);
   }
 };
 
-export const register = async (req, res) =>{
+export const loginRespone = async (req, res, next) => {
+  try {
+    let id = null;
+    if (req.session.passport && req.session.passport.user)
+      id = req.session.passport.user;
+    const user = await services.getUserById(id);
+    if (!user) res.status(401).json({ msg: "Error de autenticacion" });
+    const { first_name, last_name, email, age, role } = user;
+    res.json({
+      msg: "Login OK",
+      user: {
+        first_name,
+        last_name,
+        email,
+        age,
+        role,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+export const githubResponse = async (req, res, next) =>{
   try{
-    const {email} = req.body; 
-    if(email === 'adminCoder@coder.com' && password === 'adminCod3r123'){
-      const user = await userDao.register({
-        ...req.body,
-        role:'admin'
-      })
-      if (!user) res.status(401).json({ msg: "Usuario ya existe" }); 
-      else res.redirect('/views/login')
-    } else{
-      const user = await userDao.register(req.body);
-      if (!user) res.status(401).json({ msg: "Usuario ya existe" }); 
-      res.redirect('/views/login')
-    }
-  }catch (error) {
-    throw new Error(error);
+    console.log(req.user);
+    const { first_name, last_name, email, age, role } = req.user;
+    res.json({
+      msg: "Login con Github OK",
+      user: {
+        first_name,
+        last_name,
+        email,
+        role,
+      },
+    });
+  }catch(error){
+    next(error)
   }
 }
-
-export const visit = (req, res) => {
-  req.session.info && req.session.info.contador++;
-  res.json({
-    msg: `${req.session.info.username} ha visitado el sitio ${req.session.info.contador} veces`,
-  });
-};
-
-export const infoSession = (req, res) => {
-  res.json({
-    session: req.session,
-    sessionId: req.sessionID,
-    cookies: req.cookies,
-  });
-};
-
-export const logout = (req, res) => {
-  req.session.destroy();
-  res.redirect("/views/login");
-};
